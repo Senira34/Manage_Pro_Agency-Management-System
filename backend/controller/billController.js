@@ -8,6 +8,19 @@ export const createCreditBill = async (req, res) => {
   try {
     const { invoiceNumber, customerName, amount, route, billDate } = req.body;
 
+    // Check if invoice number already exists in the same route for this agency
+    const existingBill = await CreditBill.findOne({
+      invoiceNumber,
+      route,
+      agencyId: req.user.agencyId
+    });
+
+    if (existingBill) {
+      return res.status(400).json({ 
+        message: `Invoice number "${invoiceNumber}" already exists in route "${route}". Please use a different invoice number for this route.` 
+      });
+    }
+
     // Calculate due date (30 days from bill date)
     const dueDate = new Date(billDate);
     dueDate.setDate(dueDate.getDate() + 30);
