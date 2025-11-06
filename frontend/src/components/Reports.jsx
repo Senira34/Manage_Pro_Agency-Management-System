@@ -1,6 +1,92 @@
 import React from 'react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Reports = ({ creditBills, collections, formatDate }) => {
+  const downloadOngoingBillsPDF = () => {
+    try {
+      console.log('Starting PDF generation...');
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Manage_Pro Agency Management System', 105, 15, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.text('Ongoing Credit Bills Report', 105, 25, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 105, 32, { align: 'center' });
+      
+      // Prepare table data
+      const pendingBills = creditBills.filter(b => b.status === 'pending');
+      console.log('Pending bills count:', pendingBills.length);
+      
+      const tableData = pendingBills.map(bill => {
+        const daysOverdue = Math.floor((new Date() - new Date(bill.dueDate)) / (1000 * 60 * 60 * 24));
+        return [
+          bill.agencyName,
+          bill.customerName,
+          `Rs. ${parseFloat(bill.amount).toFixed(2)}`,
+          bill.route,
+          formatDate(bill.dueDate),
+          daysOverdue > 0 ? `${daysOverdue} days overdue` : 'Not overdue'
+        ];
+      });
+      
+      // Create table
+      autoTable(doc, {
+        startY: 40,
+        head: [['Agency', 'Customer', 'Amount', 'Route', 'Due Date', 'Days Overdue']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [254, 240, 138], // Yellow-100
+          textColor: [55, 65, 81], // Gray-700
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        bodyStyles: {
+          fontSize: 9
+        },
+        alternateRowStyles: {
+          fillColor: [249, 250, 251] // Gray-50
+        },
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 30, fontStyle: 'bold', textColor: [202, 138, 4] }, // Yellow-600
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 35 }
+        },
+        didParseCell: function(data) {
+          // Color code the overdue status
+          if (data.column.index === 5 && data.section === 'body') {
+            const cellText = data.cell.text[0];
+            if (cellText.includes('days overdue')) {
+              data.cell.styles.textColor = [153, 27, 27]; // Red-800
+              data.cell.styles.fillColor = [254, 226, 226]; // Red-100
+            } else if (cellText === 'Not overdue') {
+              data.cell.styles.textColor = [22, 101, 52]; // Green-800
+              data.cell.styles.fillColor = [220, 252, 231]; // Green-100
+            }
+          }
+        }
+      });
+      
+      console.log('PDF generated, starting download...');
+      // Save the PDF
+      doc.save(`Ongoing_Bills_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.pdf`);
+      console.log('PDF download initiated');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF: ' + error.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800">Admin Reports</h2>
@@ -85,7 +171,16 @@ const Reports = ({ creditBills, collections, formatDate }) => {
       </div>
       
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Ongoing Bills Report</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-gray-800">Ongoing Bills Report</h3>
+          <button 
+            type="button" 
+            onClick={downloadOngoingBillsPDF}
+            className="px-6 py-2 active:scale-95 transition bg-blue-500 hover:bg-blue-600 rounded text-white shadow-lg shadow-blue-500/30 text-sm font-medium cursor-pointer"
+          >
+            Download Report PDF
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-yellow-100">
