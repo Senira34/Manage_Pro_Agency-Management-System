@@ -1,12 +1,37 @@
-import React from 'react';
-import { Plus } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Plus, AlertTriangle } from 'lucide-react';
 
 const Creditbills = ({ 
   billForm, 
   setBillForm, 
   handleAddBill, 
-  selectedAgency 
+  selectedAgency,
+  creditBills 
 }) => {
+  // Check if invoice number + route combination already exists
+  const isDuplicateInvoice = useMemo(() => {
+    if (!billForm.invoiceNumber || !billForm.route) return false;
+    
+    return creditBills.some(bill => 
+      bill.invoiceNumber === billForm.invoiceNumber && 
+      bill.route === billForm.route &&
+      bill.agencyId === selectedAgency?.id
+    );
+  }, [billForm.invoiceNumber, billForm.route, creditBills, selectedAgency]);
+
+  // Check if invoice exists in OTHER routes (informational)
+  const existsInOtherRoutes = useMemo(() => {
+    if (!billForm.invoiceNumber) return [];
+    
+    return creditBills
+      .filter(bill => 
+        bill.invoiceNumber === billForm.invoiceNumber && 
+        bill.route !== billForm.route &&
+        bill.agencyId === selectedAgency?.id
+      )
+      .map(bill => bill.route);
+  }, [billForm.invoiceNumber, billForm.route, creditBills, selectedAgency]);
+
   return (
     <div className="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Credit Bill</h2>
@@ -18,10 +43,30 @@ const Creditbills = ({
               type="text"
               value={billForm.invoiceNumber}
               onChange={(e) => setBillForm({...billForm, invoiceNumber: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${
+                isDuplicateInvoice ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}
               placeholder="INV-001"
               required
             />
+            {isDuplicateInvoice && (
+              <div className="mt-2 flex items-start gap-2 text-red-600 text-xs">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                <span>
+                  This invoice number already exists in <strong>{billForm.route}</strong> route. 
+                  Please use a different invoice number.
+                </span>
+              </div>
+            )}
+            {!isDuplicateInvoice && existsInOtherRoutes.length > 0 && (
+              <div className="mt-2 flex items-start gap-2 text-blue-600 text-xs">
+                <span>ℹ️</span>
+                <span>
+                  This invoice exists in: <strong>{existsInOtherRoutes.join(', ')}</strong>. 
+                  You can still add it to <strong>{billForm.route}</strong>.
+                </span>
+              </div>
+            )}
           </div>
           
           <div>
@@ -79,7 +124,12 @@ const Creditbills = ({
         
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+          disabled={isDuplicateInvoice}
+          className={`w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
+            isDuplicateInvoice 
+              ? 'bg-gray-400 cursor-not-allowed text-gray-700' 
+              : 'bg-indigo-600 text-white hover:bg-indigo-700'
+          }`}
         >
           <Plus size={20} />
           Add Credit Bill
