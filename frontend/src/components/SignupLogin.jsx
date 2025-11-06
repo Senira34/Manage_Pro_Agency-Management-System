@@ -26,7 +26,7 @@ const SignupLogin = ({
               <UserPlus className="text-white" size={32} />
             </div>
             <h1 className="text-3xl font-bold text-gray-800">Create Account</h1>
-            <p className="text-gray-600 mt-2">Agency Management System</p>
+            <p className="text-gray-600 mt-2">Manage_Pro</p>
           </div>
           
           <form onSubmit={handleSignup} className="space-y-4">
@@ -176,7 +176,7 @@ const SignupLogin = ({
           <div className="bg-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="text-white" size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">Credit Management</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Manage_Pro</h1>
           <p className="text-gray-600 mt-2">Agency Management System</p>
         </div>
         
